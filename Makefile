@@ -4,35 +4,35 @@ include .env
 export
 
 .PHONY: help
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+help: # Show help for each of the Makefile recipes.
+	@grep -E '^[a-zA-Z0-9 -]+:.*#'  Makefile | sort | while read -r l; do printf "\033[1;32m$$(echo $$l | cut -f 1 -d':')\033[00m:$$(echo $$l | cut -f 2- -d'#')\n"; done
 
 .PHONY: run
-run: ## Runs the whole app in docker containers 
+run: # Runs the whole app in docker containers
 	docker compose -f ./docker-compose.yaml up -d 
 
 .PHONY: build
-build: ## Build or rebuild containers
+build: # Build or rebuild containers
 	docker compose -f ./docker-compose.yaml build
 
 .PHONY: down
-down: ## Remove docker containers
+down: # Stop docker containers
 	docker compose -f ./docker-compose.yaml down
 
 .PHONY: migrate postgresql up
-migrateup: ## migrate postgresql up
+migrateup: # migrate postgresql up
 	migrate -path ./db/migrations -database "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" up
 
 .PHONY: migrate postgresql down
-migratedown: ## migrate postgresql down
+migratedown: # migrate postgresql down
 	migrate -path ./db/migrations -database "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" down
 
 .PHONY: cert
-cert:
+cert:  # make RSA publick and private secrets
 	mkdir -p cert
 	openssl genrsa -out cert/access 4096
 	openssl rsa -in cert/access -pubout -out cert/access.pub
 
 .PHONY: goModule
-goModule: ## Remove docker containers
+goModule: # change GO111MODULE env 
 	go env -w GO111MODULE=on
