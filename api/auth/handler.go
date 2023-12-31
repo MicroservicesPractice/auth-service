@@ -16,24 +16,23 @@ import (
 )
 
 func SignIn(c *gin.Context) {
-	const USER_ERROR_MESSAGE = "wrong email or password"
 	var body User
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": USER_ERROR_MESSAGE})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email or password field"})
 		log.HttpLog(c, log.Warn, http.StatusBadRequest, fmt.Sprintf("%v: %v", consts.INVALID_BODY, err.Error()))
 		return
 	}
 
 	userMeta, err := UserServiceInstance.GetUserPassword(c, &body)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": USER_ERROR_MESSAGE})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user with current email doesn't exist"})
 		log.HttpLog(c, log.Warn, http.StatusBadRequest, fmt.Sprintf("cant't get user from db: %v", err.Error()))
 		return
 	}
 
 	if isPasswordCorrect := helpers.CheckPassword(body.Password, userMeta.Password); !isPasswordCorrect {
-		c.JSON(http.StatusBadRequest, gin.H{"error": USER_ERROR_MESSAGE})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "wrong email or password"})
 		log.HttpLog(c, log.Warn, http.StatusBadRequest, fmt.Sprintf("wrong email or password on uid: %v", userMeta.ID))
 		return
 	}
