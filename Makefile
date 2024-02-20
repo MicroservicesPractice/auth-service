@@ -33,6 +33,12 @@ cert:  # make RSA publick and private secrets
 	openssl genrsa -out cert/access 4096
 	openssl rsa -in cert/access -pubout -out cert/access.pub
 
+.PHONY: protoGen
+protoGen: # Generating client and server code (.pb which contains all the protocol buffer code to populate, serialize, and retrieve request and response message types; _grpc.pb An interface type for clients and servers)
+	protoc -I ../user-service/proto --go_out=./app/services/grpc\
+    --go-grpc_out=./app/services/grpc \
+    ../user-service/proto/user.proto
+
 .PHONY: goModule
 goModule: # change GO111MODULE env 
 	go env -w GO111MODULE=on

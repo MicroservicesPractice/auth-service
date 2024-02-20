@@ -13,6 +13,7 @@ import (
 	"auth-service/app/consts"
 	"auth-service/app/helpers"
 	"auth-service/app/helpers/log"
+	userGrpc "auth-service/app/services/grpc/user"
 )
 
 func SignIn(c *gin.Context) {
@@ -24,27 +25,31 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	userMeta, err := UserServiceInstance.GetUserPassword(c, &body)
+	grpcClient := userGrpc.ConnectUserServiceGrpc()
+
+	// Example: Call GetUserPassword
+	getUserPasswordReq := &userGrpc.GetUserPasswordRequest{Email: body.Email}
+	userMeta, err := grpcClient.GetUserPassword(context.Background(), getUserPasswordReq)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user with current email doesn't exist"})
-		log.HttpLog(c, log.Warn, http.StatusBadRequest, fmt.Sprintf("cant't get user from db: %v", err.Error()))
-		return
+		log.GrpcLog(log.Info, "user-service", fmt.Sprintf("Get user password response: %v", err.Error()))
 	}
+
+	log.GrpcLog(log.Info, "user-service", fmt.Sprintf("Get user password response: %v", userMeta.Id))
 
 	if isPasswordCorrect := helpers.CheckPassword(body.Password, userMeta.Password); !isPasswordCorrect {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "wrong email or password"})
-		log.HttpLog(c, log.Warn, http.StatusBadRequest, fmt.Sprintf("wrong email or password on uid: %v", userMeta.ID))
+		log.HttpLog(c, log.Warn, http.StatusBadRequest, fmt.Sprintf("wrong email or password on uid: %v", userMeta.Id))
 		return
 	}
 
-	accessDetails, err := helpers.CreateAccessToken(c.Request.Header, userMeta.ID)
+	accessDetails, err := helpers.CreateAccessToken(c.Request.Header, userMeta.Id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": consts.SOMETHING_WENT_WRONG})
 		log.HttpLog(c, log.Warn, http.StatusInternalServerError, fmt.Sprintf("can't create access token: %v", err.Error()))
 		return
 	}
 
-	refreshDetails, err := helpers.CreateRefreshToken(c.Request.Header, userMeta.ID)
+	refreshDetails, err := helpers.CreateRefreshToken(c.Request.Header, userMeta.Id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": consts.SOMETHING_WENT_WRONG})
 		log.HttpLog(c, log.Warn, http.StatusInternalServerError, fmt.Sprintf("can't create refresh token: %v", err.Error()))
@@ -75,7 +80,7 @@ func SignIn(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "user authenticated"})
-	log.HttpLog(c, log.Warn, http.StatusOK, fmt.Sprintf("user authenticated: %v", userMeta.ID))
+	log.HttpLog(c, log.Warn, http.StatusOK, fmt.Sprintf("user authenticated: %v", userMeta.Id))
 }
 
 func SignOut(c *gin.Context) {
