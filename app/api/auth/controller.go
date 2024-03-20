@@ -6,14 +6,16 @@ import (
 	"net/http"
 	"os"
 
+	grpcApi "github.com/MicroservicesPractice/grpc-api/generated/user"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 
+	"auth-service/app/config/initializers"
 	"auth-service/app/consts"
 	"auth-service/app/helpers"
 	"auth-service/app/helpers/log"
-	userGrpc "auth-service/app/services/grpc/user"
 )
 
 func SignIn(c *gin.Context) {
@@ -25,10 +27,10 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	grpcClient := userGrpc.ConnectUserServiceGrpc()
+	grpcClient := initializers.ConnectUserServiceGrpc()
 
 	// Example: Call GetUserPassword
-	getUserPasswordReq := &userGrpc.GetUserPasswordRequest{Email: body.Email}
+	getUserPasswordReq := &grpcApi.GetUserPasswordRequest{Email: body.Email}
 	userMeta, err := grpcClient.GetUserPassword(context.Background(), getUserPasswordReq)
 	if err != nil {
 		log.GrpcLog(log.Info, "user-service", fmt.Sprintf("Get user password response: %v", err.Error()))
